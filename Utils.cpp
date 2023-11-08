@@ -1,4 +1,8 @@
+#pragma once
 #include "Utils.hpp"
+#include "Object.hpp"
+#include <algorithm>
+#include <execution>
 
  std::vector<Triangle> Utils::generateGrid(int amount)
 {
@@ -34,7 +38,7 @@ float Utils::CalculateZ(float x, float y)
 	{
 		for (float j = 0.0f; j < 4.0f; j++)
 		{
-			sum += (B(i, x) * B(j, y));
+			sum += Object::controlPoints[(int)i][(int)j] * (B(i, x) * B(j, y));
 		}
 	}
 
@@ -71,11 +75,19 @@ float Utils::CalculateZ(float x, float y)
 	return glm::vec3(0, 1, z);
 }
 
- glm::vec3 Utils::GetNormalVector(glm::vec3 point)
+ glm::vec3 Utils::GetNormalVector(glm::vec3 point, glm::vec3 Nt)
 {
 	glm::vec3 N = glm::cross(Pu(point.x, point.y), Pv(point.x, point.y));
 	N = glm::normalize(N);
-	return N;
+
+	glm::vec3 b = N == glm::vec3{ 0.0f, 0.0f, 1.0f } ? glm::vec3{ 0.0f, 1.0f, 0.0f } : glm::cross(N, glm::vec3{ 0.0f, 0.0f, 1.0f });
+	glm::vec3 T = glm::cross(b, N);
+	//glm::mat3x3 M{ T, b, N };
+	//glm::mat3x3 M{ T.x, b.x, N.x, T.y, b.y, N.y, T.z, b.z, N.z };
+	glm::mat3x3 M{ T.x, T.y, T.z, b.x, b.y, b.z, N.x, N.y, N.z };
+
+
+	return (M * Nt);
 }
 
  glm::uvec3 Utils::GetVertexColor(glm::vec3 point, float kd, float ks, float m, glm::vec3 Il, glm::vec3 Io, glm::vec3 LP, glm::vec3 N)
@@ -95,3 +107,65 @@ float Utils::CalculateZ(float x, float y)
 
 	return glm::uvec3((int)fminf(I.x * 255, 255), (int)fminf(I.y * 255, 255), (int)fminf(I.z * 255, 255));
 }
+
+ uint32_t Utils::getPixel(SDL_Surface* surface, int x, int y)
+ {
+	 int bpp = surface->format->BytesPerPixel;
+	 /* Here p is the address to the pixel we want to retrieve */
+	 Uint8* p = (Uint8*)surface->pixels + y * surface->pitch + x * bpp;
+
+	 switch (bpp)
+	 {
+	 case 1:
+		 return *p;
+		 break;
+
+	 case 2:
+		 return *(Uint16*)p;
+		 break;
+
+	 case 3:
+		 if (SDL_BYTEORDER == SDL_BIG_ENDIAN)
+			 return p[0] << 16 | p[1] << 8 | p[2];
+		 else
+			 return p[0] | p[1] << 8 | p[2] << 16;
+		 break;
+
+	 case 4:
+		 return *(Uint32*)p;
+		 break;
+
+	 default:
+		 return 0;
+	 }
+ }
+
+ glm::vec3* Utils::getNormalMapVectors(SDL_Surface* normalMap, int width, int height)
+ {
+	 glm::vec3* vectors = new glm::vec3[(width + 1) * (height + 1)];
+	 int w = normalMap->w;
+	 int h = normalMap->h;
+	 int bpp = normalMap->format->BytesPerPixel;
+
+	 auto function = [&](int y)
+	 {
+		 for (int x = 0; x <= width; x++)
+		 {
+			 SDL_Color rgb;
+			 Uint32 data = getPixel(normalMap, x, y);
+			 SDL_GetRGB(data, normalMap->format, &rgb.r, &rgb.g, &rgb.b);
+			 vectors[x + y * width] = glm::vec3(rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f);
+		 }
+	 };
+
+	 std::vector<int> idx;
+	 idx.resize(std::max(width, height));
+	 std::iota(idx.begin(), idx.end(), 0);
+	 std::for_each(
+		 std::execution::par,
+		 idx.begin(),
+		 idx.begin() + height,
+		 function
+	 );
+	 return vectors;
+ }

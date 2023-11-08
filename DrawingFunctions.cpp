@@ -1,9 +1,11 @@
 #include <execution>
-#include <vector>
+#pragma once
+
 #include <glm/glm.hpp>
 
+#include <SDL.h>
+
 #include "DrawingFunctions.hpp"
-#include "Triangle.hpp"
 #include "Utils.hpp"
 #include "LightSource.hpp"
 #include "Object.hpp"
@@ -30,7 +32,7 @@ void DrawingFunctions::drawGrid(std::vector<Triangle> grid, int height, int widt
 	}
 }
 
-void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width, uint32_t* pixelData)
+void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width, uint32_t* pixelData, glm::vec3* vectors)
 {
 	std::vector<int> xCoordinates{};
 	xCoordinates.resize(width);
@@ -66,10 +68,9 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width,
 	float divisora = ((Yb * Xc - Yc * Xb) + (Yc * Xa - Ya * Xc) + (Ya * Xb - Yb * Xa));
 	float divisorb = ((Yb * Xc - Yc * Xb) + (Yc * Xa - Ya * Xc) + (Ya * Xb - Yb * Xa));
 
-
-	glm::vec3 Na = Utils::GetNormalVector(polygon[0]);
-	glm::vec3 Nb = Utils::GetNormalVector(polygon[1]);
-	glm::vec3 Nc = Utils::GetNormalVector(polygon[2]);
+	glm::vec3 Na = Utils::GetNormalVector(polygon[0], vectors[(int)(polygon[0].x * width + polygon[0].y * height * width)]);
+	glm::vec3 Nb = Utils::GetNormalVector(polygon[1], vectors[(int)(polygon[1].x * width + polygon[1].y * height * width)]);
+	glm::vec3 Nc = Utils::GetNormalVector(polygon[2], vectors[(int)(polygon[2].x * width + polygon[2].y * height * width)]);
 
 	std::vector<ActiveEdge> AET{};
 
@@ -175,7 +176,7 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width,
 					Object::m,
 					LightSource::color,
 					Object::color,
-					LightSource::position,
+					LightSource::realCoordinates(width, height, 100),
 					N
 				);
 				uint32_t r = static_cast<uint32_t>(color.x);

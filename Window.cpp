@@ -1,5 +1,8 @@
+#pragma once
+
 #include "Window.hpp"
 #include "SDL.h"
+#include <SDL_image.h>
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -15,8 +18,6 @@
 
 Window::Window()
 {
-    pixelColors = new Uint32[(SCREEN_WIDTH + 1) * (SCREEN_HEIGHT + 1)];
-    grid = Utils::generateGrid(2);
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         return;
@@ -33,9 +34,18 @@ Window::Window()
         return;
     }
 
+    normalMap = IMG_Load("NormalMap.png");
+    if (normalMap == NULL) {
+        std::cerr << "Failed to load the image: " << IMG_GetError() << std::endl;
+    }
+
     gridTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
     surfaceTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
-
+    if (normalMap == NULL)
+    {
+        std::cout << "Load Failed" << std::endl;
+        return;
+    }
 
     ImGui::CreateContext();
     ImGuiIO& io{ ImGui::GetIO() };
@@ -53,14 +63,20 @@ Window::Window()
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     
     SDL_RenderClear(renderer);
+
+    pixelColors = new Uint32[(SCREEN_WIDTH + 1) * (SCREEN_HEIGHT + 1)];
+    grid = Utils::generateGrid(2);
+    vectors = Utils::getNormalMapVectors(normalMap, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 Window::~Window()
 {
     delete(pixelColors);
+    delete(vectors);
     ImGui_ImplSDL2_Shutdown();
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui::DestroyContext();
+    SDL_FreeSurface(normalMap);
     SDL_DestroyTexture(gridTexture);
     SDL_DestroyTexture(surfaceTexture);
     SDL_DestroyRenderer(renderer);
@@ -80,6 +96,7 @@ void Window::runWindow()
     int amount = 2;
     float oColor[3] = { 1.0f, 1.0f, 1.0f };
     float prevColor[3] = { oColor[0], oColor[1], oColor[2] };
+    float z = 0;
 
     while (!quit)
     {
@@ -92,14 +109,37 @@ void Window::runWindow()
         ImGui::NewFrame();
         ImGui::Begin("Options");
         ImGui::Checkbox("Draw grid", &drawGrid);
-        ImGui::SliderInt("Amount of triangles", &amount, 2, 30, "%d");
+        ImGui::SliderInt("Amount of triangles", &amount, 2, 100, "%d");
         ImGui::ColorPicker3("Select light color", oColor);
         ImGui::SliderFloat("Kd", &(Object::kd), 0.0f, 1.0f);
         ImGui::SliderFloat("Ks", &(Object::ks), 0.0f, 1.0f);
         ImGui::SliderFloat("m", &(Object::m), 1.0f, 100.0f, "%1.0f");
         ImGui::Checkbox("Animation", &animation);
         ImGui::End();
+
+        ImGui::Begin("Control Points");
+        ImGui::SliderFloat("p01", &Object::controlPoints[0][1], 0.0f, 1.0f);
+        ImGui::SliderFloat("p02", &Object::controlPoints[0][2], 0.0f, 1.0f);
+
+        ImGui::SliderFloat("p10", &Object::controlPoints[1][0], 0.0f, 1.0f);
+        ImGui::SliderFloat("p11", &Object::controlPoints[1][1], 0.0f, 1.0f);
+        ImGui::SliderFloat("p12", &Object::controlPoints[1][2], 0.0f, 1.0f);
+        ImGui::SliderFloat("p13", &Object::controlPoints[1][3], 0.0f, 1.0f);
+
+        ImGui::SliderFloat("p20", &Object::controlPoints[2][0], 0.0f, 1.0f);
+        ImGui::SliderFloat("p21", &Object::controlPoints[2][1], 0.0f, 1.0f);
+        ImGui::SliderFloat("p22", &Object::controlPoints[2][2], 0.0f, 1.0f);
+        ImGui::SliderFloat("p23", &Object::controlPoints[2][3], 0.0f, 1.0f);
+
+        ImGui::SliderFloat("p31", &Object::controlPoints[3][1], 0.0f, 1.0f);
+        ImGui::SliderFloat("p32", &Object::controlPoints[3][2], 0.0f, 1.0f);
+
+        ImGui::End();
+
+        
         ImGui::Render();
+
+        LightSource::position.z = (LightSource::position.z - z);
 
         if (prevAmount != amount)
         {
@@ -137,11 +177,11 @@ void Window::runWindow()
 
         if (animation)
         {
-            LightSource::move()
+            LightSource::move(0.01f, z, SCREEN_WIDTH, SCREEN_HEIGHT);
         }
 
         auto processGridElement = [&](const Triangle& element) {
-            DrawingFunctions::getPolygonColors(element, SCREEN_HEIGHT, SCREEN_WIDTH, pixelColors);
+            DrawingFunctions::getPolygonColors(element, SCREEN_HEIGHT, SCREEN_WIDTH, pixelColors, vectors);
         };
 
         if (updateSurface)
@@ -195,7 +235,8 @@ void Window::render(bool drawGrid)
 
     SDL_SetRenderTarget(renderer, NULL);
     SDL_RenderCopy(renderer, surfaceTexture, NULL, NULL);
-    SDL_RenderCopy(renderer, gridTexture, NULL, NULL);
+    SDL_RenderCopy(renderer, gridTexture, NULL, NULL );
+    
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(renderer);
 }

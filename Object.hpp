@@ -10,6 +10,8 @@ public:
 	static float kd;
 	static float ks;
 	static float m;
+
+	static float controlPoints[4][4];
 	
 
 };

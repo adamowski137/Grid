@@ -3,6 +3,7 @@
 #include <vector>
 #include <SDL.h>
 #include "Triangle.hpp"
+#include <glm/glm.hpp>
 
 class Window
 {
@@ -20,7 +21,9 @@ private:
 	SDL_Renderer* renderer;
 	SDL_Texture* gridTexture;
 	SDL_Texture* surfaceTexture;
+	SDL_Surface* normalMap;
 	uint32_t* pixelColors;
+	glm::vec3* vectors;
 
 	std::vector<Triangle> grid;
 
