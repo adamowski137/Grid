@@ -68,9 +68,9 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width,
 	float divisora = ((Yb * Xc - Yc * Xb) + (Yc * Xa - Ya * Xc) + (Ya * Xb - Yb * Xa));
 	float divisorb = ((Yb * Xc - Yc * Xb) + (Yc * Xa - Ya * Xc) + (Ya * Xb - Yb * Xa));
 
-	glm::vec3 Na = Utils::GetNormalVector(polygon[0], vectors[(int)(polygon[0].x * width + polygon[0].y * height * width)]);
-	glm::vec3 Nb = Utils::GetNormalVector(polygon[1], vectors[(int)(polygon[1].x * width + polygon[1].y * height * width)]);
-	glm::vec3 Nc = Utils::GetNormalVector(polygon[2], vectors[(int)(polygon[2].x * width + polygon[2].y * height * width)]);
+	glm::vec3 Na = Utils::GetNormalVector(polygon[0]);
+	glm::vec3 Nb = Utils::GetNormalVector(polygon[1]);
+	glm::vec3 Nc = Utils::GetNormalVector(polygon[2]);
 
 	std::vector<ActiveEdge> AET{};
 
@@ -138,7 +138,7 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width,
 				break;
 			}
 
-			auto function = [&](int xTemp) {
+			/*auto function = [&](int xTemp) {
 				int xDraw = xTemp + (int)AET[i].xCurrent;
 				float alpha1 = (a1 + (Yc * (xDraw / width) - (y / height) * Xc) + ((y / height) * Xb - Yb * (xDraw / width))) / divisora;
 				float beta1 = (b1 + (Ya * (xDraw / width) - (y / height) * Xa) + ((y / height) * Xc - Yc * (xDraw / width))) / divisorb;
@@ -160,15 +160,24 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width,
 				uint32_t b = static_cast<uint32_t>(color.z);
 				r = ((r | (g << 8)) | (b << 16));
 				pixelData[(int)xDraw + (int)y * width] = r;
-			};
+			};*/
 			//std::for_each(std::execution::par, xCoordinates.begin(), xCoordinates.begin() + ceilf(AET[(i + 1)].xCurrent - AET[i].xCurrent), function);
+			
 			for (float xDraw = AET[i].xCurrent; xDraw < AET[(i + 1)].xCurrent; xDraw++)
 			{
 				float alpha1 = (a1 + (Yc * (xDraw / width) - (y / height) * Xc) + ((y / height) * Xb - Yb * (xDraw / width))) / divisora;
 				float beta1 = (b1 + (Ya * (xDraw / width) - (y / height) * Xa) + ((y / height) * Xc - Yc * (xDraw / width))) / divisorb;
 				float gamma1 = 1 - alpha1 - beta1;
+				
 				float z = alpha1 * Za + beta1 * Zb + gamma1 * Zc;
+				
 				glm::vec3 N = Na * alpha1 + Nb * beta1 + Nc * gamma1;
+
+				glm::vec3 Nt = vectors[(int)(xDraw + y * width)];
+				glm::vec3 B = N == glm::vec3{ 0.0f, 0.0f, 1.0f } ? glm::vec3{ 0.0f, 1.0f, 0.0f } : glm::cross(N, glm::vec3{ 0.0f, 0.0f, 1.0f });
+				glm::vec3 T = glm::cross(B, N);
+				glm::mat3x3 M{ T.x, T.y, T.z, B.x, B.y, B.z, N.x, N.y, N.z };
+				N = M * Nt;
 				glm::vec3 color = Utils::GetVertexColor(
 					glm::vec3(xDraw, y, z),
 					Object::kd,

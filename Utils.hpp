@@ -20,7 +20,7 @@ public:
 
 	static glm::vec3 Pv(float x, float y);
 
-	static glm::vec3 GetNormalVector(glm::vec3 point, glm::vec3 Nt);
+	static glm::vec3 GetNormalVector(glm::vec3 point);
 
 	static glm::uvec3 GetVertexColor(glm::vec3 point, float kd, float ks, float m, glm::vec3 Il, glm::vec3 Io, glm::vec3 LP, glm::vec3 N);
 

@@ -75,19 +75,11 @@ float Utils::CalculateZ(float x, float y)
 	return glm::vec3(0, 1, z);
 }
 
- glm::vec3 Utils::GetNormalVector(glm::vec3 point, glm::vec3 Nt)
+ glm::vec3 Utils::GetNormalVector(glm::vec3 point)
 {
 	glm::vec3 N = glm::cross(Pu(point.x, point.y), Pv(point.x, point.y));
 	N = glm::normalize(N);
-
-	glm::vec3 b = N == glm::vec3{ 0.0f, 0.0f, 1.0f } ? glm::vec3{ 0.0f, 1.0f, 0.0f } : glm::cross(N, glm::vec3{ 0.0f, 0.0f, 1.0f });
-	glm::vec3 T = glm::cross(b, N);
-	//glm::mat3x3 M{ T, b, N };
-	//glm::mat3x3 M{ T.x, b.x, N.x, T.y, b.y, N.y, T.z, b.z, N.z };
-	glm::mat3x3 M{ T.x, T.y, T.z, b.x, b.y, b.z, N.x, N.y, N.z };
-
-
-	return (M * Nt);
+	return N;
 }
 
  glm::uvec3 Utils::GetVertexColor(glm::vec3 point, float kd, float ks, float m, glm::vec3 Il, glm::vec3 Io, glm::vec3 LP, glm::vec3 N)
