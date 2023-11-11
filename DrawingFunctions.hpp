@@ -44,9 +44,9 @@ struct ActiveEdge
 class DrawingFunctions 
 {
 public:
-	static void drawGrid(std::vector<Triangle> grid, int height, int width, SDL_Texture* texture, SDL_Renderer* renderer);
+	static void drawGrid(std::vector<Triangle> grid, int width, int height, SDL_Texture* texture, SDL_Renderer* renderer);
 
-	static void getPolygonColors(Triangle polygon, int height, int width, uint32_t* pixelData, glm::vec3* vectors);
+	static void getPolygonColors(Triangle polygon, int width, int height, uint32_t* pixelData, glm::vec3** vectors);
 
-	static void fillScreen(int height, int width, uint32_t* pixelColor, SDL_Renderer* renderer, SDL_Texture* texture);
+	static void fillScreen(int width, int height, uint32_t* pixelColor, SDL_Renderer* renderer, SDL_Texture* texture);
 };

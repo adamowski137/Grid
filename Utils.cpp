@@ -132,21 +132,24 @@ float Utils::CalculateZ(float x, float y)
 	 }
  }
 
- glm::vec3* Utils::getNormalMapVectors(SDL_Surface* normalMap, int width, int height)
+ glm::vec3** Utils::getNormalMapVectors(SDL_Surface* normalMap, int width, int height)
  {
-	 glm::vec3* vectors = new glm::vec3[(width + 1) * (height + 1)];
-	 int w = normalMap->w;
-	 int h = normalMap->h;
+	 glm::vec3** vectors = new glm::vec3*[(height + 1)];
+	 for (int i = 0; i <= height; i++)
+	 {
+		 vectors[i] = new glm::vec3[width + 1];
+	 }
+
 	 int bpp = normalMap->format->BytesPerPixel;
 
 	 auto function = [&](int y)
 	 {
-		 for (int x = 0; x <= width; x++)
+		 for (int x = 0; x < width; x++)
 		 {
 			 SDL_Color rgb;
 			 Uint32 data = getPixel(normalMap, x, y);
 			 SDL_GetRGB(data, normalMap->format, &rgb.r, &rgb.g, &rgb.b);
-			 vectors[x + y * width] = glm::vec3(rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f);
+			 vectors[y][x] = glm::vec3(rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f);
 		 }
 	 };
 

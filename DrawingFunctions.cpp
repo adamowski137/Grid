@@ -1,7 +1,7 @@
-#include <execution>
 #pragma once
 
 #include <glm/glm.hpp>
+#include <execution>
 
 #include <SDL.h>
 
@@ -11,7 +11,7 @@
 #include "Object.hpp"
 
 
-void DrawingFunctions::drawGrid(std::vector<Triangle> grid, int height, int width, SDL_Texture* texture, SDL_Renderer* renderer)
+void DrawingFunctions::drawGrid(std::vector<Triangle> grid, int width, int height, SDL_Texture* texture, SDL_Renderer* renderer)
 {
 	SDL_SetRenderTarget(renderer, texture);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
@@ -32,7 +32,7 @@ void DrawingFunctions::drawGrid(std::vector<Triangle> grid, int height, int widt
 	}
 }
 
-void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width, uint32_t* pixelData, glm::vec3* vectors)
+void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height, uint32_t* pixelData, glm::vec3** vectors)
 {
 	std::vector<int> xCoordinates{};
 	xCoordinates.resize(width);
@@ -133,36 +133,6 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width,
 
 		for (int i = 0; i < AET.size(); i += 2)
 		{
-			if (i + 1 > AET.size() - 1)
-			{
-				break;
-			}
-
-			/*auto function = [&](int xTemp) {
-				int xDraw = xTemp + (int)AET[i].xCurrent;
-				float alpha1 = (a1 + (Yc * (xDraw / width) - (y / height) * Xc) + ((y / height) * Xb - Yb * (xDraw / width))) / divisora;
-				float beta1 = (b1 + (Ya * (xDraw / width) - (y / height) * Xa) + ((y / height) * Xc - Yc * (xDraw / width))) / divisorb;
-				float gamma1 = 1 - alpha1 - beta1;
-				float z = alpha1 * Za + beta1 * Zb + gamma1 * Zc;
-				glm::vec3 N = Na * alpha1 + Nb * beta1 + Nc * gamma1;
-				glm::vec3 color = Utils::GetVertexColor(
-					glm::vec3(xDraw, y, z),
-					1.0f,
-					0.0f,
-					100,
-					LightSource::color,
-					Object::color,
-					LightSource::position,
-					N
-				);
-				uint32_t r = static_cast<uint32_t>(color.x);
-				uint32_t g = static_cast<uint32_t>(color.y);
-				uint32_t b = static_cast<uint32_t>(color.z);
-				r = ((r | (g << 8)) | (b << 16));
-				pixelData[(int)xDraw + (int)y * width] = r;
-			};*/
-			//std::for_each(std::execution::par, xCoordinates.begin(), xCoordinates.begin() + ceilf(AET[(i + 1)].xCurrent - AET[i].xCurrent), function);
-			
 			for (float xDraw = AET[i].xCurrent; xDraw < AET[(i + 1)].xCurrent; xDraw++)
 			{
 				float alpha1 = (a1 + (Yc * (xDraw / width) - (y / height) * Xc) + ((y / height) * Xb - Yb * (xDraw / width))) / divisora;
@@ -173,11 +143,11 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width,
 				
 				glm::vec3 N = Na * alpha1 + Nb * beta1 + Nc * gamma1;
 
-				glm::vec3 Nt = vectors[(int)(xDraw + y * width)];
+				glm::vec3 Nt = vectors[(int) y][(int)xDraw];
 				glm::vec3 B = N == glm::vec3{ 0.0f, 0.0f, 1.0f } ? glm::vec3{ 0.0f, 1.0f, 0.0f } : glm::cross(N, glm::vec3{ 0.0f, 0.0f, 1.0f });
 				glm::vec3 T = glm::cross(B, N);
 				glm::mat3x3 M{ T.x, T.y, T.z, B.x, B.y, B.z, N.x, N.y, N.z };
-				N = M * Nt;
+				N = glm::normalize(M * Nt); 
 				glm::vec3 color = Utils::GetVertexColor(
 					glm::vec3(xDraw, y, z),
 					Object::kd,
@@ -196,6 +166,10 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width,
 			}
 		}
 
+		if (AET.size() == 1)
+		{
+			break;
+		}
 		std::for_each(std::execution::par, AET.begin(), AET.end(), [](ActiveEdge& x) {
 			x.updateEdge();
 			});
@@ -204,19 +178,16 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int height, int width,
 	}
 }
 
-void DrawingFunctions::fillScreen(int height, int width, uint32_t* pixelColor, SDL_Renderer* renderer, SDL_Texture* texture)
+void DrawingFunctions::fillScreen(int width, int height, uint32_t* pixelColor, SDL_Renderer* renderer, SDL_Texture* texture)
 {
 	uint8_t* pixels;
 	int pitch;
 	const SDL_PixelFormat* pixelFormat = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
-	int w;
-	int h;
-	SDL_QueryTexture(texture, NULL, NULL, &w, &h);
 	SDL_LockTexture(texture, NULL, (void**)&pixels, &pitch);
 	auto function = [&](int y)
 	{
 		Uint32* p = (Uint32*)(pixels + pitch * y);
-		for (int x = 0; x < w; x++)
+		for (int x = 0; x < width; x++)
 		{
 			uint32_t color = pixelColor[y * width + x];
 			*p = SDL_MapRGBA(pixelFormat, color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF, 255);
@@ -225,12 +196,12 @@ void DrawingFunctions::fillScreen(int height, int width, uint32_t* pixelColor, S
 	};
 
 	std::vector<int> idx;
-	idx.resize(std::max(w, h));
+	idx.resize(height);
 	std::iota(idx.begin(), idx.end(), 0);
 	std::for_each(
 		std::execution::par,
 		idx.begin(),
-		idx.begin() + h,
+		idx.begin() + height,
 		function
 	);
 	SDL_UnlockTexture(texture);

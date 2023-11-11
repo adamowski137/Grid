@@ -23,7 +23,7 @@ private:
 	SDL_Texture* surfaceTexture;
 	SDL_Surface* normalMap;
 	uint32_t* pixelColors;
-	glm::vec3* vectors;
+	glm::vec3** vectors;
 
 	std::vector<Triangle> grid;
 

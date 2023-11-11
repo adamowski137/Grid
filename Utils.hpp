@@ -24,7 +24,7 @@ public:
 
 	static glm::uvec3 GetVertexColor(glm::vec3 point, float kd, float ks, float m, glm::vec3 Il, glm::vec3 Io, glm::vec3 LP, glm::vec3 N);
 
-	static glm::vec3* getNormalMapVectors(SDL_Surface* normalMap, int width, int height);
+	static glm::vec3** getNormalMapVectors(SDL_Surface* normalMap, int width, int height);
 
 private:
 	static uint32_t getPixel(SDL_Surface* surface, int x, int y);

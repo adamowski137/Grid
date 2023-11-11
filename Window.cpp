@@ -34,7 +34,7 @@ Window::Window()
         return;
     }
 
-    normalMap = IMG_Load("NormalMap.png");
+    normalMap = IMG_Load("NormalMap2.png");
     if (normalMap == NULL) {
         std::cerr << "Failed to load the image: " << IMG_GetError() << std::endl;
     }
@@ -71,6 +71,10 @@ Window::Window()
 
 Window::~Window()
 {
+    for (int i = 0; i < SCREEN_HEIGHT + 1; i++)
+    {
+        delete(vectors[i]);
+    }
     delete(pixelColors);
     delete(vectors);
     ImGui_ImplSDL2_Shutdown();
@@ -181,7 +185,7 @@ void Window::runWindow()
         }
 
         auto processGridElement = [&](const Triangle& element) {
-            DrawingFunctions::getPolygonColors(element, SCREEN_HEIGHT, SCREEN_WIDTH, pixelColors, vectors);
+            DrawingFunctions::getPolygonColors(element, SCREEN_WIDTH, SCREEN_HEIGHT, pixelColors, vectors);
         };
 
         if (updateSurface)
@@ -219,12 +223,12 @@ void Window::render(bool drawGrid)
     SDL_SetRenderTarget(renderer, surfaceTexture);
     SDL_RenderClear(renderer);
 
-    DrawingFunctions::fillScreen(SCREEN_HEIGHT, SCREEN_WIDTH, pixelColors, renderer, surfaceTexture);
+    DrawingFunctions::fillScreen(SCREEN_WIDTH, SCREEN_HEIGHT, pixelColors, renderer, surfaceTexture);
     auto end = std::chrono::high_resolution_clock::now();
 
     if (drawGrid)
     {
-        DrawingFunctions::drawGrid(grid, SCREEN_HEIGHT, SCREEN_WIDTH, gridTexture, renderer);
+        DrawingFunctions::drawGrid(grid, SCREEN_WIDTH, SCREEN_HEIGHT, gridTexture, renderer);
     }
     else
     {
