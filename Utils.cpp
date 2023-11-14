@@ -34,13 +34,15 @@
 float Utils::CalculateZ(float x, float y)
 {
 	float sum = 0.0f;
-	for (float i = 0.0f; i < 4.0f; i++)
-	{
-		for (float j = 0.0f; j < 4.0f; j++)
-		{
+	std::vector<int> yIndex{};
+	yIndex.resize(4);
+	std::iota(yIndex.begin(), yIndex.end(), 0);
+	std::for_each(yIndex.begin(), yIndex.end(), [&](int i) {
+		std::for_each(yIndex.begin(), yIndex.end(), [&](int j) {
 			sum += Object::controlPoints[(int)i][(int)j] * (B(i, x) * B(j, y));
-		}
-	}
+		});
+	});
+
 
 	return sum;
 }

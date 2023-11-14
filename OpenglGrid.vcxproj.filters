@@ -19,6 +19,12 @@
     <Filter Include="Pliki nagłówkowe\imgui">
       <UniqueIdentifier>{949cc944-1acc-45e4-9b22-ce5d7d8efc97}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Pliki nagłówkowe\imgui_file_dialog">
+      <UniqueIdentifier>{a6223603-5ced-4930-98e5-65a98ae375c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki źródłowe\imgui_file_dialog">
+      <UniqueIdentifier>{9f2ded61-10ee-4b7f-9696-09e562ecbe6e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="program.cpp">
@@ -66,6 +72,9 @@
     <ClCompile Include="Object.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="ImGuiFileDialog.cpp">
+      <Filter>Pliki źródłowe\imgui_file_dialog</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Triangle.hpp">
@@ -106,6 +115,15 @@
     </ClInclude>
     <ClInclude Include="Object.hpp">
       <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiFileDialog.h">
+      <Filter>Pliki nagłówkowe\imgui_file_dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiFileDialogConfig.h">
+      <Filter>Pliki nagłówkowe\imgui_file_dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="dirent.h">
+      <Filter>Pliki nagłówkowe\imgui_file_dialog</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

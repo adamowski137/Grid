@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Elementy rozwiązania", "Elementy rozwiązania", "{FF823CE5-E626-44E1-A70C-FD632CEB8188}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		klawiszologia.md = klawiszologia.md
 	EndProjectSection
 EndProject
 Global

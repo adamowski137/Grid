@@ -1,11 +1,10 @@
 #pragma once
 
-#include "Window.hpp"
-#include "SDL.h"
 #include <SDL_image.h>
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
+#include "ImGuiFileDialog.h"
 #include "Utils.hpp"
 #include "DrawingFunctions.hpp"
 #include "Object.hpp"
@@ -15,6 +14,7 @@
 #include <chrono>
 #include <math.h>
 #include <execution>
+#include "Window.hpp"
 
 Window::Window()
 {
@@ -34,18 +34,13 @@ Window::Window()
         return;
     }
 
-    normalMap = IMG_Load("NormalMap2.png");
+    normalMap = IMG_Load("NormalMap.png");
     if (normalMap == NULL) {
         std::cerr << "Failed to load the image: " << IMG_GetError() << std::endl;
     }
 
     gridTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
     surfaceTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
-    if (normalMap == NULL)
-    {
-        std::cout << "Load Failed" << std::endl;
-        return;
-    }
 
     ImGui::CreateContext();
     ImGuiIO& io{ ImGui::GetIO() };
@@ -97,15 +92,19 @@ void Window::runWindow()
     bool updateGrid = true;
     bool updateSurface = true;
     bool animation = false;
+    bool useNormalMap = false;
     int amount = 2;
+    float lColor[3] = { 1.0f, 1.0f, 1.0f };
     float oColor[3] = { 1.0f, 1.0f, 1.0f };
-    float prevColor[3] = { oColor[0], oColor[1], oColor[2] };
+    float prevColor[3] = { lColor[0], lColor[1], lColor[2] };
     float z = 0;
-
+    auto prevTime = std::chrono::high_resolution_clock::now();
     while (!quit)
     {
         //auto startFrame = std::chrono::high_resolution_clock::now();
-
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> elapsed = currentTime - prevTime;
+        prevTime = currentTime;
         int prevAmount = amount;
         bool prevDrawGrid = drawGrid;
         ImGui_ImplSDLRenderer2_NewFrame();
@@ -114,36 +113,60 @@ void Window::runWindow()
         ImGui::Begin("Options");
         ImGui::Checkbox("Draw grid", &drawGrid);
         ImGui::SliderInt("Amount of triangles", &amount, 2, 100, "%d");
-        ImGui::ColorPicker3("Select light color", oColor);
+        ImGui::ColorPicker3("Select light color", lColor);
         ImGui::SliderFloat("Kd", &(Object::kd), 0.0f, 1.0f);
         ImGui::SliderFloat("Ks", &(Object::ks), 0.0f, 1.0f);
         ImGui::SliderFloat("m", &(Object::m), 1.0f, 100.0f, "%1.0f");
         ImGui::Checkbox("Animation", &animation);
+        ImGui::SliderFloat("Light Z position", &z, 0.0f, 5.0f, "%0.2f");
+        ImGui::ColorPicker3("Select object color", oColor);
+        ImGui::Checkbox("Use normal map", &useNormalMap);
+        if (ImGui::Button("Select normal map")) {
+            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".png", ".");
+
+        }
+        if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey", ImGuiWindowFlags_NoCollapse)) {
+            if (ImGuiFileDialog::Instance()->IsOk()) {
+                auto sel = ImGuiFileDialog::Instance()->GetSelection();
+                normalMap = IMG_Load((*sel.begin()).second.c_str());
+                if (normalMap == NULL) {
+                    std::cerr << "Failed to load the image: " << IMG_GetError() << std::endl;
+                }
+                vectors = Utils::getNormalMapVectors(normalMap, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+            }
+            ImGuiFileDialog::Instance()->Close();
+        }
+        
         ImGui::End();
 
         ImGui::Begin("Control Points");
-        ImGui::SliderFloat("p01", &Object::controlPoints[0][1], 0.0f, 1.0f);
-        ImGui::SliderFloat("p02", &Object::controlPoints[0][2], 0.0f, 1.0f);
+        ImGui::SliderFloat("p00", &Object::controlPoints[0][0], 0.01f, 1.0f);
+        ImGui::SliderFloat("p01", &Object::controlPoints[0][1], 0.01f, 1.0f);
+        ImGui::SliderFloat("p02", &Object::controlPoints[0][2], 0.01f, 1.0f);
+        ImGui::SliderFloat("p03", &Object::controlPoints[0][3], 0.01f, 1.0f);
 
-        ImGui::SliderFloat("p10", &Object::controlPoints[1][0], 0.0f, 1.0f);
-        ImGui::SliderFloat("p11", &Object::controlPoints[1][1], 0.0f, 1.0f);
-        ImGui::SliderFloat("p12", &Object::controlPoints[1][2], 0.0f, 1.0f);
-        ImGui::SliderFloat("p13", &Object::controlPoints[1][3], 0.0f, 1.0f);
+        ImGui::SliderFloat("p10", &Object::controlPoints[1][0], 0.01f, 1.0f);
+        ImGui::SliderFloat("p11", &Object::controlPoints[1][1], 0.01f, 1.0f);
+        ImGui::SliderFloat("p12", &Object::controlPoints[1][2], 0.01f, 1.0f);
+        ImGui::SliderFloat("p13", &Object::controlPoints[1][3], 0.01f, 1.0f);
 
-        ImGui::SliderFloat("p20", &Object::controlPoints[2][0], 0.0f, 1.0f);
-        ImGui::SliderFloat("p21", &Object::controlPoints[2][1], 0.0f, 1.0f);
-        ImGui::SliderFloat("p22", &Object::controlPoints[2][2], 0.0f, 1.0f);
-        ImGui::SliderFloat("p23", &Object::controlPoints[2][3], 0.0f, 1.0f);
+        ImGui::SliderFloat("p20", &Object::controlPoints[2][0], 0.01f, 1.0f);
+        ImGui::SliderFloat("p21", &Object::controlPoints[2][1], 0.01f, 1.0f);
+        ImGui::SliderFloat("p22", &Object::controlPoints[2][2], 0.01f, 1.0f);
+        ImGui::SliderFloat("p23", &Object::controlPoints[2][3], 0.01f, 1.0f);
 
-        ImGui::SliderFloat("p31", &Object::controlPoints[3][1], 0.0f, 1.0f);
-        ImGui::SliderFloat("p32", &Object::controlPoints[3][2], 0.0f, 1.0f);
+        ImGui::SliderFloat("p30", &Object::controlPoints[3][0], 0.01f, 1.0f);
+        ImGui::SliderFloat("p31", &Object::controlPoints[3][1], 0.01f, 1.0f);
+        ImGui::SliderFloat("p32", &Object::controlPoints[3][2], 0.01f, 1.0f);
+        ImGui::SliderFloat("p33", &Object::controlPoints[3][3], 0.01f, 1.0f);
 
         ImGui::End();
 
         
         ImGui::Render();
 
-        LightSource::position.z = (LightSource::position.z - z);
+        LightSource::position.z = z;
 
         if (prevAmount != amount)
         {
@@ -151,17 +174,11 @@ void Window::runWindow()
             updateSurface = true;
         }
 
-        if (fabsf(prevColor[0] - oColor[0]) > 0.001 && fabsf(prevColor[1] - oColor[1]) > 0.001 && fabsf(prevColor[2] - oColor[2]) > 0.001)
-        {
             
-            LightSource::setColor(oColor[0], oColor[1], oColor[2]);
+        LightSource::setColor(lColor[0], lColor[1], lColor[2]);
 
-            prevColor[0] = oColor[0];
-            prevColor[1] = oColor[1];
-            prevColor[2] = oColor[2];
 
-            updateSurface = true;
-        }
+        Object::setColor(oColor[0], oColor[1], oColor[2]);
 
         if (prevDrawGrid != drawGrid)
         {
@@ -170,34 +187,27 @@ void Window::runWindow()
 
         if (updateGrid)
         {
-            auto start = std::chrono::high_resolution_clock::now();
             grid = Utils::generateGrid(amount);
-            auto end = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> duration = end - start;
-            std::cout << "Grid generation time: " << duration.count() << " seconds" << std::endl;
 
             updateGrid = false;
         }
 
         if (animation)
         {
-            LightSource::move(0.01f, z, SCREEN_WIDTH, SCREEN_HEIGHT);
+            float speed = 0.01f;
+            float deltaTime = elapsed.count();
+            float movement = speed * deltaTime;
+            LightSource::move(movement, z, SCREEN_WIDTH, SCREEN_HEIGHT);
         }
 
         auto processGridElement = [&](const Triangle& element) {
-            DrawingFunctions::getPolygonColors(element, SCREEN_WIDTH, SCREEN_HEIGHT, pixelColors, vectors);
+            DrawingFunctions::getPolygonColors(element, SCREEN_WIDTH, SCREEN_HEIGHT, pixelColors, vectors, useNormalMap);
         };
 
         if (updateSurface)
         {
 
-            //auto start = std::chrono::high_resolution_clock::now();
             std::for_each(std::execution::par, grid.begin(), grid.end(), processGridElement);
-            //auto end = std::chrono::high_resolution_clock::now();
-            //std::chrono::duration<double> duration = end - start;
-            //std::cout << "Get color time: " << duration.count() << " seconds" << std::endl;
-
-            //updateSurface = false;
         }
 
         while (SDL_PollEvent(&e) != 0)
@@ -212,9 +222,6 @@ void Window::runWindow()
         }
         render(drawGrid);
 
-        //auto endFrame = std::chrono::high_resolution_clock::now();
-        //std::chrono::duration<double> durationFrame = endFrame - startFrame;
-        //std::cout << "Frame Rate: " << 1.0 / durationFrame.count() << std::endl;
     }
 }
 

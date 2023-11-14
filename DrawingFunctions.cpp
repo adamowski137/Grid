@@ -17,8 +17,7 @@ void DrawingFunctions::drawGrid(std::vector<Triangle> grid, int width, int heigh
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	SDL_RenderClear(renderer);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-	for (const auto& t : grid)
-	{
+	std::for_each(grid.begin(), grid.end(), [&](auto& t) {
 		int x1 = static_cast<int>(t.A.x * width);
 		int y1 = static_cast<int>(t.A.y * height);
 		int x2 = static_cast<int>(t.B.x * width);
@@ -29,10 +28,10 @@ void DrawingFunctions::drawGrid(std::vector<Triangle> grid, int width, int heigh
 		SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
 		SDL_RenderDrawLine(renderer, x2, y2, x3, y3);
 		SDL_RenderDrawLine(renderer, x1, y1, x3, y3);
-	}
+	});
 }
 
-void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height, uint32_t* pixelData, glm::vec3** vectors)
+void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height, uint32_t* pixelData, glm::vec3** vectors, bool useNormalMap)
 {
 	std::vector<int> xCoordinates{};
 	xCoordinates.resize(width);
@@ -74,18 +73,16 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height,
 
 	std::vector<ActiveEdge> AET{};
 
-	
-
-	for (float y = yMin; y <= yMax; y++)
+	for (float yi = yMin; yi <= yMax + 1; yi++)
 	{
-
+		float y = yi - 1;
 		for (int k = 0; k < polygonSize; k++)
 		{
-			if (verticies[idx[k]].y < y - 1)
+			if (verticies[idx[k]].y < y)
 			{
 				continue;
 			}
-			if (verticies[idx[k]].y > y - 1)
+			if (verticies[idx[k]].y > y)
 			{
 				break;
 			}
@@ -115,7 +112,6 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height,
 			}
 			else if (verticies[nextidx].y < verticies[idx[k]].y)
 			{
-
 				for (auto it = AET.begin(); it != AET.end(); it++)
 				{
 					if (*(it) == ActiveEdge{ verticies[nextidx].x, verticies[nextidx].y, verticies[idx[k]].x, verticies[idx[k]].y })
@@ -143,11 +139,14 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height,
 				
 				glm::vec3 N = Na * alpha1 + Nb * beta1 + Nc * gamma1;
 
-				glm::vec3 Nt = vectors[(int) y][(int)xDraw];
-				glm::vec3 B = N == glm::vec3{ 0.0f, 0.0f, 1.0f } ? glm::vec3{ 0.0f, 1.0f, 0.0f } : glm::cross(N, glm::vec3{ 0.0f, 0.0f, 1.0f });
-				glm::vec3 T = glm::cross(B, N);
-				glm::mat3x3 M{ T.x, T.y, T.z, B.x, B.y, B.z, N.x, N.y, N.z };
-				N = glm::normalize(M * Nt); 
+				if (useNormalMap)
+				{
+					glm::vec3 Nt = vectors[(int) y][(int)xDraw];
+					glm::vec3 B = N == glm::vec3{ 0.0f, 0.0f, 1.0f } ? glm::vec3{ 0.0f, 1.0f, 0.0f } : glm::cross(N, glm::vec3{ 0.0f, 0.0f, 1.0f });
+					glm::vec3 T = glm::cross(B, N);
+					glm::mat3x3 M{ T.x, T.y, T.z, B.x, B.y, B.z, N.x, N.y, N.z };
+					N = glm::normalize(M * Nt);
+				}
 				glm::vec3 color = Utils::GetVertexColor(
 					glm::vec3(xDraw, y, z),
 					Object::kd,
@@ -155,7 +154,7 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height,
 					Object::m,
 					LightSource::color,
 					Object::color,
-					LightSource::realCoordinates(width, height, 100),
+					LightSource::realCoordinates(width, height),
 					N
 				);
 				uint32_t r = static_cast<uint32_t>(color.x);
@@ -166,10 +165,6 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height,
 			}
 		}
 
-		if (AET.size() == 1)
-		{
-			break;
-		}
 		std::for_each(std::execution::par, AET.begin(), AET.end(), [](ActiveEdge& x) {
 			x.updateEdge();
 			});
@@ -201,7 +196,7 @@ void DrawingFunctions::fillScreen(int width, int height, uint32_t* pixelColor, S
 	std::for_each(
 		std::execution::par,
 		idx.begin(),
-		idx.begin() + height,
+		idx.end(),
 		function
 	);
 	SDL_UnlockTexture(texture);
