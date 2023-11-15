@@ -14,8 +14,10 @@ void LightSource::setColor(float r, float g, float b)
 
 void LightSource::move(float angleInc, float dz, int width, int height)
 {
-	angle += angleInc;
-	position += glm::vec3(angle * cosf(angle), angle * sinf(angle), 0);
+	angle -= angleInc;
+
+	float c = -0.0001f;
+	position += glm::vec3(c * angle * cosf(angle), c * angle * sinf(angle), 0);
 }
 
 glm::vec3 LightSource::realCoordinates(int w, int h)

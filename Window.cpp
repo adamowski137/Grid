@@ -34,7 +34,7 @@ Window::Window()
         return;
     }
 
-    normalMap = IMG_Load("NormalMap.png");
+    normalMap = IMG_Load("Spirala.png");
     if (normalMap == NULL) {
         std::cerr << "Failed to load the image: " << IMG_GetError() << std::endl;
     }
@@ -101,7 +101,6 @@ void Window::runWindow()
     auto prevTime = std::chrono::high_resolution_clock::now();
     while (!quit)
     {
-        //auto startFrame = std::chrono::high_resolution_clock::now();
         auto currentTime = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float> elapsed = currentTime - prevTime;
         prevTime = currentTime;
@@ -194,7 +193,7 @@ void Window::runWindow()
 
         if (animation)
         {
-            float speed = 0.01f;
+            float speed = 0.5f;
             float deltaTime = elapsed.count();
             float movement = speed * deltaTime;
             LightSource::move(movement, z, SCREEN_WIDTH, SCREEN_HEIGHT);
