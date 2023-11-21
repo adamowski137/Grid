@@ -22,6 +22,7 @@ private:
 	SDL_Texture* gridTexture;
 	SDL_Texture* surfaceTexture;
 	SDL_Surface* normalMap;
+	SDL_Surface* objectTexture;
 	uint32_t* pixelColors;
 	glm::vec3** vectors;
 

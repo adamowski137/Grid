@@ -3,6 +3,8 @@
 #include <vector>
 #include "Triangle.hpp"
 
+
+
 struct ActiveEdge 
 {
 	float x1, y1, x2, y2;
@@ -46,7 +48,7 @@ class DrawingFunctions
 public:
 	static void drawGrid(std::vector<Triangle> grid, int width, int height, SDL_Texture* texture, SDL_Renderer* renderer);
 
-	static void getPolygonColors(Triangle polygon, int width, int height, uint32_t* pixelData, glm::vec3** vectors, bool useNormalMap);
+	static void getPolygonColors(Triangle polygon, int width, int height, uint32_t* pixelData, glm::vec3** vectors, bool useNormalMap, bool useTexture);
 
 	static void fillScreen(int width, int height, uint32_t* pixelColor, SDL_Renderer* renderer, SDL_Texture* texture);
 };

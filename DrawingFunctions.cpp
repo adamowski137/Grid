@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtc/epsilon.hpp>
 #include <execution>
 
 #include <SDL.h>
@@ -31,7 +32,7 @@ void DrawingFunctions::drawGrid(std::vector<Triangle> grid, int width, int heigh
 	});
 }
 
-void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height, uint32_t* pixelData, glm::vec3** vectors, bool useNormalMap)
+void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height, uint32_t* pixelData, glm::vec3** vectors, bool useNormalMap, bool useTexture)
 {
 	std::vector<int> xCoordinates{};
 	xCoordinates.resize(width);
@@ -138,23 +139,29 @@ void DrawingFunctions::getPolygonColors(Triangle polygon, int width, int height,
 				float z = alpha1 * Za + beta1 * Zb + gamma1 * Zc;
 				
 				glm::vec3 N = Na * alpha1 + Nb * beta1 + Nc * gamma1;
+				glm::vec3 objectColor = Object::color;
 
 				if (useNormalMap)
 				{
 					glm::vec3 Nt = vectors[(int) y][(int)xDraw];
-					glm::vec3 B = N == glm::vec3{ 0.0f, 0.0f, 1.0f } ? glm::vec3{ 0.0f, 1.0f, 0.0f } : glm::cross(N, glm::vec3{ 0.0f, 0.0f, 1.0f });
+					glm::vec3 B = glm::all(glm::epsilonEqual(N, glm::vec3{ 0.0f, 0.0f, 1.0f }, 0.000001f)) ? glm::vec3{ 0.0f, 1.0f, 0.0f } : glm::cross(N, glm::vec3{ 0.0f, 0.0f, 1.0f });
 					glm::vec3 T = glm::cross(B, N);
 					glm::mat3x3 M{ T.x, T.y, T.z, B.x, B.y, B.z, N.x, N.y, N.z };
-					N = glm::normalize(M * Nt);
+					N = M * Nt;
 				}
+				if (useTexture)
+				{
+					objectColor = Object::texture[(int) y][(int) xDraw];
+				}
+
 				glm::vec3 color = Utils::GetVertexColor(
-					glm::vec3(xDraw, y, z),
+					glm::vec3(xDraw/width, y/height, z),
 					Object::kd,
 					Object::ks,
 					Object::m,
 					LightSource::color,
-					Object::color,
-					LightSource::realCoordinates(width, height),
+					objectColor,
+					LightSource::position,
 					N
 				);
 				uint32_t r = static_cast<uint32_t>(color.x);

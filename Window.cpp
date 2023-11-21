@@ -34,10 +34,13 @@ Window::Window()
         return;
     }
 
-    normalMap = IMG_Load("Spirala.png");
+    normalMap = IMG_Load("normalMaps/Spirala.png");
     if (normalMap == NULL) {
         std::cerr << "Failed to load the image: " << IMG_GetError() << std::endl;
     }
+
+
+    objectTexture = IMG_Load("textures/munio.png");
 
     gridTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
     surfaceTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -62,6 +65,7 @@ Window::Window()
     pixelColors = new Uint32[(SCREEN_WIDTH + 1) * (SCREEN_HEIGHT + 1)];
     grid = Utils::generateGrid(2);
     vectors = Utils::getNormalMapVectors(normalMap, SCREEN_WIDTH, SCREEN_HEIGHT);
+    Object::texture = Utils::getNormalMapVectors(objectTexture, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 Window::~Window()
@@ -93,6 +97,11 @@ void Window::runWindow()
     bool updateSurface = true;
     bool animation = false;
     bool useNormalMap = false;
+    bool useTexture = true;
+
+    ImGuiFileDialog fileDialogTexture;
+    ImGuiFileDialog fileDialogNormalMap;
+
     int amount = 2;
     float lColor[3] = { 1.0f, 1.0f, 1.0f };
     float oColor[3] = { 1.0f, 1.0f, 1.0f };
@@ -119,22 +128,39 @@ void Window::runWindow()
         ImGui::Checkbox("Animation", &animation);
         ImGui::SliderFloat("Light Z position", &z, 0.0f, 5.0f, "%0.2f");
         ImGui::ColorPicker3("Select object color", oColor);
-        ImGui::Checkbox("Use normal map", &useNormalMap);
-        if (ImGui::Button("Select normal map")) {
-            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".png", ".");
-
+        ImGui::Checkbox("Use texture", &useTexture);
+        if (ImGui::Button("Select texture")) {
+            fileDialogTexture.OpenDialog("ChooseTextureDlgKey", "Choose File", ".png", ".");
         }
-        if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey", ImGuiWindowFlags_NoCollapse)) {
-            if (ImGuiFileDialog::Instance()->IsOk()) {
-                auto sel = ImGuiFileDialog::Instance()->GetSelection();
+
+        if (fileDialogTexture.Display("ChooseTextureDlgKey", ImGuiWindowFlags_NoCollapse)) {
+            if (fileDialogTexture.IsOk()) {
+                auto sel = fileDialogTexture.GetSelection();
+                objectTexture = IMG_Load((*sel.begin()).second.c_str());
+                if (objectTexture == NULL) {
+                    std::cerr << "Failed to load the image: " << IMG_GetError() << std::endl;
+                }
+                Object::texture = Utils::getNormalMapVectors(objectTexture, SCREEN_WIDTH, SCREEN_HEIGHT);
+            }
+            fileDialogTexture.Close();
+        }
+
+        ImGui::Checkbox("Use normal map", &useNormalMap);
+
+        if (ImGui::Button("Select normal map")) {
+            fileDialogNormalMap.OpenDialog("ChooseFileDlgKey", "Choose File", ".png", ".");
+        }
+
+        if (fileDialogNormalMap.Display("ChooseFileDlgKey", ImGuiWindowFlags_NoCollapse)) {
+            if (fileDialogNormalMap.IsOk()) {
+                auto sel = fileDialogNormalMap.GetSelection();
                 normalMap = IMG_Load((*sel.begin()).second.c_str());
                 if (normalMap == NULL) {
                     std::cerr << "Failed to load the image: " << IMG_GetError() << std::endl;
                 }
                 vectors = Utils::getNormalMapVectors(normalMap, SCREEN_WIDTH, SCREEN_HEIGHT);
-
             }
-            ImGuiFileDialog::Instance()->Close();
+            fileDialogNormalMap.Close();
         }
         
         ImGui::End();
@@ -200,7 +226,7 @@ void Window::runWindow()
         }
 
         auto processGridElement = [&](const Triangle& element) {
-            DrawingFunctions::getPolygonColors(element, SCREEN_WIDTH, SCREEN_HEIGHT, pixelColors, vectors, useNormalMap);
+            DrawingFunctions::getPolygonColors(element, SCREEN_WIDTH, SCREEN_HEIGHT, pixelColors, vectors, useNormalMap, useTexture);
         };
 
         if (updateSurface)

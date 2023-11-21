@@ -44,7 +44,7 @@ float Utils::CalculateZ(float x, float y)
 	});
 
 
-	return sum;
+	return fminf(1.0f, sum);
 }
 
  float Utils::B(float i, float t)
@@ -146,22 +146,22 @@ float Utils::CalculateZ(float x, float y)
 
 	 auto function = [&](int y)
 	 {
-		 for (int x = 0; x < width; x++)
+		 for (int x = 0; x <= width; x++)
 		 {
 			 SDL_Color rgb;
 			 Uint32 data = getPixel(normalMap, x, y);
 			 SDL_GetRGB(data, normalMap->format, &rgb.r, &rgb.g, &rgb.b);
-			 vectors[y][x] = glm::vec3(rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f);
+			 vectors[y][x] = glm::vec3(fminf(1.0f, rgb.r / 255.0f), fminf(1.0f, rgb.g / 255.0f), fminf(1.0f, rgb.b / 255.0f));
 		 }
 	 };
 
 	 std::vector<int> idx;
-	 idx.resize(std::max(width, height));
+	 idx.resize(std::max(width, height + 1));
 	 std::iota(idx.begin(), idx.end(), 0);
 	 std::for_each(
 		 std::execution::par,
 		 idx.begin(),
-		 idx.begin() + height,
+		 idx.begin() + height+ 1,
 		 function
 	 );
 	 return vectors;
